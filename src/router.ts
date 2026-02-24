@@ -21,16 +21,19 @@ import {
 } from "./controllers/conversation.controller";
 import {
   createFriendRequestHandler,
-  deleteFriendHandler,
   getFriendRequestsHanlder,
-  getFriendsHandler,
   updateFriendRequestHandler,
-} from "./controllers/friend.controller";
+} from "./controllers/friend-request.controller";
 import {
   updateFriendRequestSchema,
   createFriendRequestSchema,
-  deleteFriendSchema,
-} from "./schemas/friend.schema";
+  getFriendRequestsSchema,
+} from "./schemas/friend-request.schema";
+import { deleteFriendSchema } from "./schemas/friend.schema";
+import {
+  deleteFriendHandler,
+  getFriendsHandler,
+} from "./controllers/friend.controller";
 
 const router = Router();
 
@@ -50,7 +53,12 @@ router.get("/users/me", authenticateToken, getUserProfile);
 /**
  * Friend requests routes
  */
-router.get("/friend-requests", authenticateToken, getFriendRequestsHanlder);
+router.get(
+  "/friend-requests",
+  authenticateToken,
+  validateRequest(getFriendRequestsSchema),
+  getFriendRequestsHanlder
+);
 router.post(
   "/friend-requests",
   authenticateToken,

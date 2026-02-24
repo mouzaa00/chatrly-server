@@ -31,29 +31,23 @@ export const tokensTable = pgTable("refresh_tokens", {
 
 export const statusEnum = pgEnum("status", ["pending", "accepted", "rejected"]);
 
-export const friendRequestsTable = pgTable("friend_Requests", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  senderId: uuid("sender_id")
-    .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
-  recipientId: uuid("recipient_id")
-    .notNull()
-    .references(() => usersTable.id, { onDelete: "cascade" }),
-  status: statusEnum().default("pending").notNull(),
-});
+export type Status = "pending" | "accepted" | "rejected";
 
-export const friendRequestsRelations = relations(
-  friendRequestsTable,
-  ({ one }) => ({
-    sender: one(usersTable, {
-      fields: [friendRequestsTable.senderId],
-      references: [usersTable.id],
-    }),
-    recipient: one(usersTable, {
-      fields: [friendRequestsTable.recipientId],
-      references: [usersTable.id],
-    }),
-  })
+export const friendRequestsTable = pgTable(
+  "friend_Requests",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    senderId: uuid("sender_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    receiverId: uuid("receiver_id")
+      .notNull()
+      .references(() => usersTable.id, { onDelete: "cascade" }),
+    status: statusEnum().default("pending").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (t) => [unique().on(t.receiverId, t.senderId)]
 );
 
 export const conversationsTable = pgTable(

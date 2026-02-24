@@ -1,132 +1,68 @@
 import { and, eq, or } from "drizzle-orm";
 import { db } from "../db";
-import { friendRequestsTable } from "../db/schema";
+import { friendRequestsTable, usersTable } from "../db/schema";
+import { NotFoundError } from "../errors";
 
-export async function getFriendRequests(userId: string) {
-  return await db.query.friendRequestsTable.findMany({
-    where: and(
-      eq(friendRequestsTable.recipientId, userId),
-      eq(friendRequestsTable.status, "pending")
-    ),
-    with: {
-      sender: {
-        columns: {
-          id: true,
-          email: true,
-          name: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
-    },
-  });
-}
-
-export async function createFriendRequest(
-  senderId: string,
-  recipientId: string
-) {
-  return await db
-    .insert(friendRequestsTable)
-    .values({ senderId, recipientId })
-    .returning();
-}
-
-export async function isExistingFriendRequest(
-  senderId: string,
-  recipientId: string,
-  status: "accepted" | "rejected" | "pending"
-) {
-  const [friendRequest] = await db
-    .select()
+export async function getFriends(userId: string) {
+  const friends = await db
+    .select({
+      id: usersTable.id,
+      name: usersTable.name,
+      email: usersTable.email,
+    })
     .from(friendRequestsTable)
     .where(
       and(
-        eq(friendRequestsTable.senderId, senderId),
-        eq(friendRequestsTable.recipientId, recipientId),
-        eq(friendRequestsTable.status, status)
+        eq(friendRequestsTable.status, "accepted"),
+        or(
+          eq(friendRequestsTable.senderId, userId),
+          eq(friendRequestsTable.receiverId, userId)
+        )
+      )
+    )
+    .innerJoin(
+      usersTable,
+      or(
+        eq(friendRequestsTable.senderId, usersTable.id),
+        eq(friendRequestsTable.receiverId, usersTable.id)
       )
     );
 
-  if (!friendRequest) {
-    return false;
-  }
-  return true;
-}
-
-export async function isRecipientSentRequest(
-  senderId: string,
-  recipientId: string
-) {
-  const [friendRequest] = await db
-    .select()
-    .from(friendRequestsTable)
-    .where(
-      and(
-        eq(friendRequestsTable.senderId, senderId),
-        eq(friendRequestsTable.recipientId, recipientId)
-      )
-    );
-
-  if (!friendRequest) {
-    return false;
-  }
-  return true;
-}
-
-export async function updateFriendRequest(
-  friendRequestId: string,
-  status: "accepted" | "rejected" | "pending"
-) {
-  const [friendRequest] = await db
-    .update(friendRequestsTable)
-    .set({ status })
-    .where(eq(friendRequestsTable.id, friendRequestId))
-    .returning();
-
-  if (status === "accepted" && friendRequest) {
-    await db.insert(friendRequestsTable).values({
-      senderId: friendRequest.recipientId,
-      recipientId: friendRequest.senderId,
-      status,
-    });
-  }
+  return friends.filter((friend) => friend.id !== userId);
 }
 
 export async function deleteFriend(userId: string, friendId: string) {
+  const [existingFriendRequest] = await db
+    .select()
+    .from(friendRequestsTable)
+    .where(
+      or(
+        and(
+          eq(friendRequestsTable.senderId, userId),
+          eq(friendRequestsTable.receiverId, friendId)
+        ),
+        and(
+          eq(friendRequestsTable.senderId, friendId),
+          eq(friendRequestsTable.receiverId, userId)
+        )
+      )
+    );
+
+  if (!existingFriendRequest) {
+    throw new NotFoundError("Friend request not found!");
+  }
   await db
     .delete(friendRequestsTable)
     .where(
       or(
         and(
           eq(friendRequestsTable.senderId, userId),
-          eq(friendRequestsTable.recipientId, friendId)
+          eq(friendRequestsTable.receiverId, friendId)
         ),
         and(
           eq(friendRequestsTable.senderId, friendId),
-          eq(friendRequestsTable.recipientId, userId)
+          eq(friendRequestsTable.receiverId, userId)
         )
       )
     );
-}
-
-export async function getFriends(userId: string) {
-  const acceptedFriendRequests = await db.query.friendRequestsTable.findMany({
-    where: and(
-      eq(friendRequestsTable.senderId, userId),
-      eq(friendRequestsTable.status, "accepted")
-    ),
-    with: {
-      recipient: {
-        columns: {
-          id: true,
-          email: true,
-          name: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-      },
-    },
-  });
-  return acceptedFriendRequests.map((f) => f.recipient);
 }
