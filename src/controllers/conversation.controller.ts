@@ -1,21 +1,22 @@
-import { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import {
   createConversation,
-  createConversationMessage,
-  getConversationById,
+  deleteConversation,
+  getConversation,
   getConversations,
   getExistingConversation,
 } from "../services/conversation.service";
-import { log } from "../logger";
 import {
   CreateConversationBody,
-  CreateConversationMessageBody,
-  CreateConversationMessageParams,
+  GetAndDeleteConversationParams,
 } from "../schemas/conversation.schema";
+import { ConflictError } from "../errors";
+import { nextTick } from "process";
 
 export async function createConversationHandler(
   req: Request<{}, {}, CreateConversationBody>,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) {
   try {
     const creatorId = req.user!.id as string;
@@ -26,11 +27,9 @@ export async function createConversationHandler(
       recipientId
     );
     if (existingConversation) {
-      res.status(409).json({
-        message: "Conversation already exits",
-        conversation: existingConversation,
-      });
-      return;
+      throw new ConflictError(
+        "A conversation between these users already exists"
+      );
     }
 
     const conversation = await createConversation(creatorId, recipientId);
@@ -38,57 +37,53 @@ export async function createConversationHandler(
     res
       .status(201)
       .json({ message: "Conversation created successfully", conversation });
-  } catch (err: any) {
-    log.error(`Database error: ${err.message}`);
-    res.status(500).json({ message: "Server error" });
+  } catch (error) {
+    next(error);
   }
 }
 
-export async function createConversationMessageHandler(
-  req: Request<
-    CreateConversationMessageParams,
-    {},
-    CreateConversationMessageBody
-  >,
-  res: Response
+export async function getConversationsHandler(
+  req: Request,
+  res: Response,
+  next: NextFunction
 ) {
-  const { content } = req.body;
-  const { conversationId } = req.params;
-  const userId = req.user!.id as string;
-
-  if (!conversationId) {
-    res.json({ message: "Conversation id not provided" });
-    return;
-  }
-  await createConversationMessage(content, conversationId, userId);
-
-  res.status(201).json({ message: "Message created successfully" });
-}
-
-export async function getConversationsHandler(req: Request, res: Response) {
   try {
     const userId = req.user!.id as string;
     const conversations = await getConversations(userId);
 
-    res.json({ conversations });
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    res.status(200).json({ conversations });
+  } catch (error) {
+    next(error);
   }
 }
 
-export async function getConversationByIdHandler(req: Request, res: Response) {
+export async function deleteConversationHandler(
+  req: Request<GetAndDeleteConversationParams>,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const { conversationId } = req.params;
+    await deleteConversation(conversationId);
+
+    res.status(200).json({ message: "Conversation deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getConversationHandler(
+  req: Request<GetAndDeleteConversationParams>,
+  res: Response,
+  next: NextFunction
+) {
   try {
     const { conversationId } = req.params;
 
-    if (!conversationId) {
-      res.status(400).json({ message: "conversationId param required" });
-      return;
-    }
+    const conversation = await getConversation(conversationId);
 
-    const conversation = await getConversationById(conversationId);
-
-    res.json(conversation);
-  } catch {
-    res.status(500).json({ message: "Server error" });
+    res.status(200).json({ conversation });
+  } catch (error) {
+    next(error);
   }
 }

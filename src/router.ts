@@ -10,13 +10,13 @@ import { loginSchema, registerSchema } from "./schemas/auth.schema";
 import { authenticateToken } from "./middleware/authenticateToken";
 import { getUserProfile } from "./controllers/user.controller";
 import {
-  createConversationMessageSchema,
   createConversationSchema,
+  getAndDeleteConversationSchema,
 } from "./schemas/conversation.schema";
 import {
   createConversationHandler,
-  createConversationMessageHandler,
-  getConversationByIdHandler,
+  deleteConversationHandler,
+  getConversationHandler,
   getConversationsHandler,
 } from "./controllers/conversation.controller";
 import {
@@ -34,6 +34,17 @@ import {
   deleteFriendHandler,
   getFriendsHandler,
 } from "./controllers/friend.controller";
+import {
+  createMessageSchema,
+  deleteMessageSchema,
+  getMessagesSchema,
+} from "./schemas/message.schema";
+import {
+  createMessageHandler,
+  deleteMessageHandler,
+  getMessagesHandler,
+} from "./controllers/message.controller";
+import { getMessages } from "./services/message.service";
 
 const router = Router();
 
@@ -87,24 +98,45 @@ router.delete(
  * Conversations routes
  */
 router.get("/conversations", authenticateToken, getConversationsHandler);
-router.get(
-  "/conversations/:conversationId",
-  authenticateToken,
-  getConversationByIdHandler
-);
-
 router.post(
   "/conversations",
   authenticateToken,
   validateRequest(createConversationSchema),
   createConversationHandler
 );
+router.get(
+  "/conversations/:conversationId",
+  authenticateToken,
+  validateRequest(getAndDeleteConversationSchema),
+  getConversationHandler
+);
+router.delete(
+  "/conversations/:conversationId",
+  authenticateToken,
+  validateRequest(getAndDeleteConversationSchema),
+  deleteConversationHandler
+);
 
+/**
+ * Messages routes
+ */
+router.get(
+  "/conversations/:conversationId/messages",
+  authenticateToken,
+  validateRequest(getMessagesSchema),
+  getMessagesHandler
+);
 router.post(
   "/conversations/:conversationId/messages",
   authenticateToken,
-  validateRequest(createConversationMessageSchema),
-  createConversationMessageHandler
+  validateRequest(createMessageSchema),
+  createMessageHandler
+);
+router.delete(
+  "/conversations/:conversationId/messages/:messageId",
+  authenticateToken,
+  validateRequest(deleteMessageSchema),
+  deleteMessageHandler
 );
 
 export default router;

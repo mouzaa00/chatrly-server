@@ -61,18 +61,16 @@ export const conversationsTable = pgTable(
       .notNull()
       .references(() => usersTable.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
-  (table) => {
-    return {
-      uniqueConversation: unique().on(table.creatorId, table.recipientId), // Ensures one conversation per user pair
-    };
-  }
+  (t) => [
+    unique().on(t.creatorId, t.recipientId), // Ensures one conversation per user pair
+  ]
 );
 
 export const convertionsRelations = relations(
   conversationsTable,
-  ({ many, one }) => ({
-    messages: many(messagesTable),
+  ({ one }) => ({
     creator: one(usersTable, {
       fields: [conversationsTable.creatorId],
       references: [usersTable.id],
@@ -94,15 +92,5 @@ export const messagesTable = pgTable("messages", {
     .notNull()
     .references(() => conversationsTable.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
-
-export const messagesRelations = relations(messagesTable, ({ one }) => ({
-  sender: one(usersTable, {
-    fields: [messagesTable.senderId],
-    references: [usersTable.id],
-  }),
-  conversation: one(conversationsTable, {
-    fields: [messagesTable.conversationId],
-    references: [conversationsTable.id],
-  }),
-}));

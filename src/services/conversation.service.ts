@@ -1,6 +1,6 @@
 import { and, eq, or } from "drizzle-orm";
 import { db } from "../db";
-import { conversationsTable, messagesTable } from "../db/schema";
+import { conversationsTable } from "../db/schema";
 
 export async function createConversation(
   creatorId: string,
@@ -21,7 +21,7 @@ export async function getExistingConversation(
   userId: string,
   friendId: string
 ) {
-  const existingConversation = await db
+  const [existingConversation] = await db
     .select()
     .from(conversationsTable)
     .where(
@@ -38,9 +38,7 @@ export async function getExistingConversation(
     )
     .limit(1);
 
-  if (existingConversation.length > 0) {
-    return existingConversation[0];
-  }
+  return existingConversation;
 }
 
 export async function getConversations(userId: string) {
@@ -64,36 +62,17 @@ export async function getConversations(userId: string) {
   });
 }
 
-export async function createConversationMessage(
-  content: string,
-  conversationId: string,
-  senderId: string
-) {
-  const [message] = await db
-    .insert(messagesTable)
-    .values({
-      content,
-      conversationId,
-      senderId,
-    })
-    .returning();
-
-  return message;
+export async function deleteConversation(conversationId: string) {
+  await db
+    .delete(conversationsTable)
+    .where(eq(conversationsTable.id, conversationId));
 }
 
-export async function getConversationById(conversationId: string) {
-  return await db.query.conversationsTable.findFirst({
-    where: eq(conversationsTable.id, conversationId),
-    with: {
-      messages: {
-        with: {
-          sender: {
-            columns: {
-              password: false,
-            },
-          },
-        },
-      },
-    },
-  });
+export async function getConversation(conversationId: string) {
+  const [conversation] = await db
+    .select()
+    .from(conversationsTable)
+    .where(eq(conversationsTable.id, conversationId));
+
+  return conversation;
 }

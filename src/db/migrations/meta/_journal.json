@@ -29,6 +29,13 @@
       "when": 1771867000683,
       "tag": "0003_green_blizzard",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1771993383692,
+      "tag": "0004_brave_rogue",
+      "breakpoints": true
     }
   ]
 }
