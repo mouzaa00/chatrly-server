@@ -91,12 +91,7 @@ export async function updateFriendRequest(
   const [friendRequest] = await db
     .select()
     .from(friendRequestsTable)
-    .where(
-      and(
-        eq(friendRequestsTable.id, friendRequestId),
-        eq(friendRequestsTable.receiverId, userId)
-      )
-    );
+    .where(and(eq(friendRequestsTable.id, friendRequestId)));
 
   if (!friendRequest) {
     throw new NotFoundError("Friend request not found");

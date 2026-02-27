@@ -10,8 +10,8 @@ import {
   CreateConversationBody,
   GetAndDeleteConversationParams,
 } from "../schemas/conversation.schema";
-import { ConflictError } from "../errors";
-import { nextTick } from "process";
+import { ConflictError, NotFoundError } from "../errors";
+import { getUserById } from "../services/user.service";
 
 export async function createConversationHandler(
   req: Request<{}, {}, CreateConversationBody>,
@@ -30,6 +30,11 @@ export async function createConversationHandler(
       throw new ConflictError(
         "A conversation between these users already exists"
       );
+    }
+
+    const recipientExists = await getUserById(recipientId);
+    if (!recipientExists) {
+      throw new NotFoundError("Recipient user does not exist");
     }
 
     const conversation = await createConversation(creatorId, recipientId);

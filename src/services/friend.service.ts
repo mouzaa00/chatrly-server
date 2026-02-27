@@ -36,33 +36,39 @@ export async function deleteFriend(userId: string, friendId: string) {
     .select()
     .from(friendRequestsTable)
     .where(
-      or(
-        and(
-          eq(friendRequestsTable.senderId, userId),
-          eq(friendRequestsTable.receiverId, friendId)
+      and(
+        or(
+          and(
+            eq(friendRequestsTable.senderId, userId),
+            eq(friendRequestsTable.receiverId, friendId)
+          ),
+          and(
+            eq(friendRequestsTable.senderId, friendId),
+            eq(friendRequestsTable.receiverId, userId)
+          )
         ),
-        and(
-          eq(friendRequestsTable.senderId, friendId),
-          eq(friendRequestsTable.receiverId, userId)
-        )
+        eq(friendRequestsTable.status, "accepted")
       )
     );
 
   if (!existingFriendRequest) {
-    throw new NotFoundError("Friend request not found!");
+    throw new NotFoundError("Friend not found!");
   }
   await db
     .delete(friendRequestsTable)
     .where(
-      or(
-        and(
-          eq(friendRequestsTable.senderId, userId),
-          eq(friendRequestsTable.receiverId, friendId)
+      and(
+        or(
+          and(
+            eq(friendRequestsTable.senderId, userId),
+            eq(friendRequestsTable.receiverId, friendId)
+          ),
+          and(
+            eq(friendRequestsTable.senderId, friendId),
+            eq(friendRequestsTable.receiverId, userId)
+          )
         ),
-        and(
-          eq(friendRequestsTable.senderId, friendId),
-          eq(friendRequestsTable.receiverId, userId)
-        )
+        eq(friendRequestsTable.status, "accepted")
       )
     );
 }

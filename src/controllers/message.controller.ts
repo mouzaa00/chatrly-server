@@ -21,9 +21,12 @@ export async function createMessageHandler(
     const { conversationId } = req.params;
     const userId = req.user!.id as string;
 
-    await createMessage(content, conversationId, userId);
+    const messageDetails = await createMessage(content, conversationId, userId);
 
-    res.status(201).json({ message: "Message created successfully" });
+    res.status(201).json({
+      message: "Message created successfully",
+      messageDetails,
+    });
   } catch (error) {
     next(error);
   }

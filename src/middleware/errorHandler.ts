@@ -29,5 +29,6 @@ export async function errorHandler(
     message = err.message;
   }
 
+  console.error((err as Error).message || err);
   res.status(statusCode).json({ error: message });
 }

@@ -44,7 +44,6 @@ import {
   deleteMessageHandler,
   getMessagesHandler,
 } from "./controllers/message.controller";
-import { getMessages } from "./services/message.service";
 
 const router = Router();
 
