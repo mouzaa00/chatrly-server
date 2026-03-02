@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from "drizzle-orm";
+import { and, asc, eq, lt } from "drizzle-orm";
 import { db } from "../db";
 import { messagesTable, usersTable } from "../db/schema";
 
@@ -53,7 +53,7 @@ export async function getMessages(
         : eq(messagesTable.conversationId, conversationId)
     )
     .limit(limit + 1) // fetch one extra message to check if there are more
-    .orderBy(desc(messagesTable.createdAt))
+    .orderBy(messagesTable.createdAt)
     .innerJoin(usersTable, eq(messagesTable.senderId, usersTable.id));
 
   const hasMore = messages.length > limit;
