@@ -56,7 +56,6 @@ export async function getMessages(
     .limit(limit + 1) // fetch one extra message to check if there are more
     .innerJoin(usersTable, eq(messagesTable.senderId, usersTable.id));
 
-  console.log("messageslength", messages.length);
   const hasMore = messages.length > limit;
   const data = hasMore ? messages.slice(0, limit) : messages;
   const nextCursor = hasMore ? data[data.length - 1]!.id : null;

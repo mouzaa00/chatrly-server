@@ -4,42 +4,19 @@ import { connect } from "./db";
 import { log } from "./logger";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { initializeSocket } from "./socket";
 
 dotenv.config();
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.ORIGIN, // Allow all origins for development
+    origin: process.env.ORIGIN,
     credentials: true,
   },
 });
 
-io.on("connection", (socket) => {
-  console.log("A user connected");
-
-  // Listen for joining a conversation
-  socket.on("join conversation", (conversationId) => {
-    socket.join(conversationId);
-    console.log(`User joined conversation: ${conversationId}`);
-  });
-
-  // Listen for leaving a conversation
-  socket.on("leave conversation", (conversationId) => {
-    socket.leave(conversationId);
-    console.log(`User leaved conversation: ${conversationId}`);
-  });
-
-  // Listen for chat messages
-  socket.on("chat message", (msg) => {
-    // Emit the message to the specific room (conversation)
-    io.to(msg.conversationId).emit("chat message", msg);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("User disconnected");
-  });
-});
+initializeSocket(io);
 
 const port = process.env.PORT || 1337;
 
